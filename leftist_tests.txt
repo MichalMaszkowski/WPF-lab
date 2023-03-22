@@ -1,0 +1,66 @@
+(*najpierw sprawdzam basic funkcje, potem tworze wiele losowych drzew 
+i sprawdzam czy są dobrymi kolejkami - testowanie: add, join, delete_min*)
+
+let a = add 5 empty;;
+let b = add 7 empty;;
+let c = add 10 empty;;
+let d = join a b;;
+let e = join d c;;
+let f = join d e;;
+let g = snd (delete_min (snd (delete_min d)));;
+
+assert (empty = empty);;
+assert (is_empty g);;
+assert (try 
+		let _ = (delete_min g) in
+		false 
+	with Empty -> true);;
+
+let porownaj a b = 
+	(a = b);;
+
+let rec porownajhurtowo l q = 
+	match l with
+		| [] -> (is_empty q)
+		| h::t -> (not (is_empty q)) && (
+			let para = delete_min q in
+			(porownaj h (fst para)) && (porownajhurtowo t (snd para)));;
+
+let l = [5; 5; 7; 7; 10];;
+assert (porownajhurtowo l f);;
+
+Random.self_init ();;
+
+
+let rec losowo n a = (* łączę n losowych drzew akumulator jest parą lista, kolejka*)
+	let rec losowanie n a =	(*tworzę jedną losowo wypełnioną kolejkę, akumulator jest parą lista, kolejka*)
+		if n = 0 then 
+			a 
+		else (
+			let tym = (Random.int 1000000) in	(*losowe liczby calkowite z [0, 1000 000)*)
+			losowanie (n - 1) (tym::(fst a), (add tym (snd a))))
+	in
+	let tym2 = losowanie 1000 ([], empty) in (*nowe drzewo*)
+	if n = 0 then a else losowo (n - 1) ((fst tym2)@(fst a), (join (snd tym2) (snd a)));;
+	
+(*funkcje sort i insert pochodzą z https://ocaml.org/learn/taste.html*)
+let rec sort = function
+    | [] -> []
+    | x :: l -> insert x (sort l)
+  and insert elem = function
+    | [] -> [elem]
+    | x :: l -> if elem < x then elem :: x :: l
+                else x :: insert elem l;;
+
+let testuj = 
+	let tym = losowo 10 ([], empty) in
+	let lista = sort (fst tym) in
+	porownajhurtowo lista (snd tym);;
+
+let rec testujduzo n a = 
+	if n = 0 then 
+		a 
+	else 
+		testujduzo (n - 1) (a && testuj);;
+
+assert (testujduzo 10 true);;
